@@ -6,8 +6,8 @@ from typing import Any, Final, Optional
 
 from homeassistant.components.sensor import (
     ENTITY_ID_FORMAT,
+    STATE_CLASS_MEASUREMENT,
     SensorEntity,
-    SensorStateClass,
 )
 from homeassistant.const import CONF_NAME, CONF_SENSORS
 from homeassistant.core import HomeAssistant
@@ -60,20 +60,21 @@ async def async_setup_platform(
 
 class IaqukSensor(SensorEntity):
     """IAQ UK sensor."""
+    _attr_has_entity_name = True
 
     def __init__(self, controller, sensor_type: str):
         """Initialize sensor."""
         self._controller = controller
         self._sensor_type = sensor_type
+        self._attr_unique_id = f"{controller.unique_id}_{sensor_type}"
 
         self.entity_id = async_generate_entity_id(
             ENTITY_ID_FORMAT, self._attr_unique_id, hass=controller.hass
         )
 
-        self._attr_unique_id = f"{controller.unique_id}_{sensor_type}"
         self._attr_name = f"{controller.name} {SENSORS[sensor_type]}"
         self._attr_state_class = (
-            SensorStateClass.MEASUREMENT if sensor_type == SENSOR_INDEX else None
+            STATE_CLASS_MEASUREMENT if sensor_type == SENSOR_INDEX else None
         )
         self._attr_device_class = (
             f"{DOMAIN}__level" if sensor_type == SENSOR_LEVEL else None
@@ -82,6 +83,10 @@ class IaqukSensor(SensorEntity):
             "IAQI" if sensor_type == SENSOR_INDEX else None
         )
         self._attr_icon = ICON_DEFAULT if sensor_type == SENSOR_INDEX else ICON_FAIR
+
+    @property
+    def name(self):
+        return self._attr_name
 
     async def async_added_to_hass(self):
         """Register callbacks."""
